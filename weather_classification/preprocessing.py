@@ -39,11 +39,11 @@ def resize_and_greyscale(orig_dir, station_dir, size=100):
         print(filename)
 
 
-def load_training_images(image_dir, dataset):
+def load_training_images(image_dir, labels_file):
     """Loads the images at the given directory into two numpy arrays, one holding the X values of the flattened image
     and another holding the Y labels retrieved from dataset csv"""
 
-    df = pd.read_csv(dataset + ".csv", index_col=['station', 'date'])
+    df = pd.read_csv(labels_file, index_col=['station', 'date'])
 
     files = os.listdir(image_dir)
     X = []
