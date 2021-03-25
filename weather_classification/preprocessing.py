@@ -39,9 +39,9 @@ def resize_and_greyscale(orig_dir, station_dir, size=100):
         print(filename)
 
 
-def load_training_images(image_dir, dataset, core_url="http://dw-dev.cmc.ec.gc.ca:8180"):
+def load_training_images(image_dir, dataset):
     """Loads the images at the given directory into two numpy arrays, one holding the X values of the flattened image
-    and another holding the Y labels """
+    and another holding the Y labels retrieved from dataset csv"""
 
     df = pd.read_csv(dataset + ".csv", index_col=['station', 'date'])
 
@@ -49,7 +49,7 @@ def load_training_images(image_dir, dataset, core_url="http://dw-dev.cmc.ec.gc.c
     X = []
     Y = []
     for filename in files:
-        x_i, station, datetime = load_training_image(image_dir, filename, core_url)
+        x_i, station, datetime = load_training_image(image_dir, filename)
         X.append(x_i)
         Y.append(df.loc[(station, datetime), 'label'])
 
@@ -76,7 +76,7 @@ def load_training_image(folder, filename):
 
     # todo should we skip night time pics? how to determine sunset/sunrise
 
-    return x, station, date+time
+    return x, station, date + time
 
 
 def generate_labels_from_observations(image_dir, dataset, core_url="http://dw-dev.cmc.ec.gc.ca:8180"):
