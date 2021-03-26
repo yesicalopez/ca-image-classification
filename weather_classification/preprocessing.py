@@ -117,21 +117,15 @@ def generate_label_from_observation(date, station, core_url="http://dw-dev.cmc.e
         obs = json.loads(response.read().decode('utf8').replace("'", '"'))
 
     snow_depth = "MSNG"
-    snow_depth_qa = 100
 
     if obs["hits"]["hits"] and snow_depth_pkg_id in obs["hits"]["hits"][0]["_source"]:
         snow_depth = obs["hits"]["hits"][0]["_source"][snow_depth_pkg_id][0]["value"]
-        snow_depth_qa = obs["hits"]["hits"][0]["_source"][snow_depth_pkg_id][0]["overallQASummary"]
 
     y = "msng"
     if snow_depth != "MSNG":
-        # we are keeping < 0 because the sensor is often suppressed when its not winter. still want to filter out 0 QA
-        if snow_depth_qa != 0:
-            if float(snow_depth) > min_snow:
-                y = "snow"
-            else:
-                y = "clear"
+        if float(snow_depth) > min_snow:
+            y = "snow"
         else:
-            y = "error"
+            y = "clear"
 
     return y
