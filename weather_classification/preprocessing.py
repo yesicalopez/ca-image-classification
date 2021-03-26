@@ -65,7 +65,7 @@ def load_training_image(folder, filename):
     x = imread(folder + "/" + filename)
     x = x.flatten()
 
-    r = re.compile("RVAS_(\w{3,4})_\w{1,2}_(\d{8})_(\d{4})Z")
+    r = re.compile("RVAS_(\w{3,4})_\w+_(\d{8})_(\d{4})Z")
     m = r.match(filename)
     station = m.group(1)
     date = m.group(2)
@@ -84,7 +84,7 @@ def generate_labels_from_observations(image_dir, dataset, core_url="http://dw-de
     """Generate the classification target labels by using the information in the weather observation found at the given
     core for the given images. Saves the label into a csv file of format <station>,<YYYYMMDDHHmm>,<label>"""
     files = os.listdir(image_dir)
-    r = re.compile("RVAS_(\w{3,4})_\w{1,2}_(\d{8})_(\d{4})Z")
+    r = re.compile("RVAS_(\w{3,4})_\w+_(\d{8})_(\d{4})Z")
 
     Y = []
     for filename in files:
