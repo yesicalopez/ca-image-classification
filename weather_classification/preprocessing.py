@@ -43,7 +43,8 @@ def load_training_images(image_dir, labels_file):
     """Loads the images at the given directory into two numpy arrays, one holding the X values of the flattened image
     and another holding the Y labels retrieved from dataset csv"""
 
-    df = pd.read_csv(labels_file, index_col=['station', 'date'])
+    df = pd.read_csv(labels_file, dtype={'station': str, 'date': str, 'label': str})
+    df.set_index(['station', 'date'], inplace=True)
 
     files = os.listdir(image_dir)
     X = []
@@ -92,19 +93,20 @@ def generate_labels_from_observations(image_dir, dataset, core_url="http://dw-de
         datetime = m.group(2) + m.group(3)
 
         label = generate_label_from_observation(datetime, station, core_url)
+        print("labelled", filename, label)
         Y.append([station, datetime, label])
 
     # save file
     df = pd.DataFrame.from_records(Y, columns=['station', 'date', 'label'], index=['station', 'date'])
     output_file = "resources/images/labels/" + dataset + ".csv"
-    print("saving " + output_file)
+    print("saving", output_file)
     df.to_csv(output_file)
     return df
 
 
 def generate_label_from_observation(date, station, core_url="http://dw-dev.cmc.ec.gc.ca:8180"):
     """Generate the classification target label by using the information in the weather observation found at the given
-    core for the given date and station"""
+    core for the given date and station. Returned label is one of 'snow', 'clear', 'msng', 'error'"""
 
     snow_depth_pkg_id = "1_11_174_2_5_3_0"
     min_snow = 1.0
@@ -114,14 +116,16 @@ def generate_label_from_observation(date, station, core_url="http://dw-dev.cmc.e
     with urllib.request.urlopen(es_req_url) as response:
         obs = json.loads(response.read().decode('utf8').replace("'", '"'))
 
-    y = "clear"
     snow_depth = "MSNG"
 
     if obs["hits"]["hits"] and snow_depth_pkg_id in obs["hits"]["hits"][0]["_source"]:
         snow_depth = obs["hits"]["hits"][0]["_source"][snow_depth_pkg_id][0]["value"]
 
+    y = "msng"
     if snow_depth != "MSNG":
         if float(snow_depth) > min_snow:
             y = "snow"
+        else:
+            y = "clear"
 
     return y
