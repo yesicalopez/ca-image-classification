@@ -92,8 +92,8 @@ def generate_labels_from_observations(image_dir, dataset, core_url="http://dw-de
         station = m.group(1)
         datetime = m.group(2) + m.group(3)
 
-        print("labelling", filename)
         label = generate_label_from_observation(datetime, station, core_url)
+        print("labelled", filename, label)
         Y.append([station, datetime, label])
 
     # save file
@@ -125,7 +125,8 @@ def generate_label_from_observation(date, station, core_url="http://dw-dev.cmc.e
 
     y = "msng"
     if snow_depth != "MSNG":
-        if snow_depth_qa >= 10:
+        # we are keeping < 0 because the sensor is often suppressed when its not winter. still want to filter out 0 QA
+        if snow_depth_qa != 0:
             if float(snow_depth) > min_snow:
                 y = "snow"
             else:
