@@ -91,20 +91,21 @@ def generate_labels_from_observations(image_dir, dataset, core_url="http://dw-de
         station = m.group(1)
         datetime = m.group(2) + m.group(3)
 
+        print("labeling", filename)
         label = generate_label_from_observation(datetime, station, core_url)
         Y.append([station, datetime, label])
 
     # save file
     df = pd.DataFrame.from_records(Y, columns=['station', 'date', 'label'], index=['station', 'date'])
     output_file = "resources/images/labels/" + dataset + ".csv"
-    print("saving " + output_file)
+    print("saving", output_file)
     df.to_csv(output_file)
     return df
 
 
 def generate_label_from_observation(date, station, core_url="http://dw-dev.cmc.ec.gc.ca:8180"):
     """Generate the classification target label by using the information in the weather observation found at the given
-    core for the given date and station"""
+    core for the given date and station. Returned label is one of 'snow', 'clear', or 'msng'"""
 
     snow_depth_pkg_id = "1_11_174_2_5_3_0"
     min_snow = 1.0
@@ -114,14 +115,18 @@ def generate_label_from_observation(date, station, core_url="http://dw-dev.cmc.e
     with urllib.request.urlopen(es_req_url) as response:
         obs = json.loads(response.read().decode('utf8').replace("'", '"'))
 
-    y = "clear"
+    y = "msng"
     snow_depth = "MSNG"
+    snow_depth_qa = -1
 
     if obs["hits"]["hits"] and snow_depth_pkg_id in obs["hits"]["hits"][0]["_source"]:
         snow_depth = obs["hits"]["hits"][0]["_source"][snow_depth_pkg_id][0]["value"]
+        snow_depth_qa = obs["hits"]["hits"][0]["_source"][snow_depth_pkg_id][0]["overallQASummary"]
 
-    if snow_depth != "MSNG":
+    if snow_depth != "MSNG" and snow_depth_qa >= 10:
         if float(snow_depth) > min_snow:
             y = "snow"
+        else:
+            y = "clear"
 
     return y
