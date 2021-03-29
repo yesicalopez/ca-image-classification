@@ -54,7 +54,7 @@ def load_training_images(image_dir, labels_file):
         X.append(x_i)
         Y.append(df.loc[(station, datetime), 'label'])
 
-    return np.asarray(X), np.asarray(Y)
+    return np.asarray(X), np.asarray(Y, dtype=str)
 
 
 def load_training_image(folder, filename):
