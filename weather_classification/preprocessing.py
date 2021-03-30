@@ -39,9 +39,12 @@ def resize_and_greyscale(orig_dir, station_dir, size=100):
         print(filename)
 
 
-def load_training_images(image_dir, labels_file):
+def load_training_images(image_dir, labels_file, ignore_stations=None):
     """Loads the images at the given directory into two numpy arrays, one holding the X values of the flattened image
     and another holding the Y labels retrieved from dataset csv"""
+
+    if ignore_stations is None:
+        ignore_stations = []
 
     df = pd.read_csv(labels_file, dtype={'station': str, 'date': str, 'label': str})
     df.set_index(['station', 'date'], inplace=True)
@@ -50,7 +53,25 @@ def load_training_images(image_dir, labels_file):
     X = []
     Y = []
     for filename in files:
-        x_i, station, datetime = load_training_image(image_dir, filename)
+
+        r = re.compile("RVAS_(\w+)_\w+_(\d{8})_(\d{4})Z")
+        m = r.match(filename)
+        station = m.group(1)
+        date = m.group(2)
+        time = m.group(3)
+
+        if station in ignore_stations:
+            continue
+
+        # change obstime to top of the hour
+        if not time.endswith("00"):
+            time = time[:2] + "00"
+        datetime = date+time
+
+        # todo should we skip night time pics? how to determine sunset/sunrise
+
+        x_i = load_training_image(image_dir, filename)
+
         X.append(x_i)
         Y.append(df.loc[(station, datetime), 'label'][0])
 
@@ -58,33 +79,19 @@ def load_training_images(image_dir, labels_file):
 
 
 def load_training_image(folder, filename):
-    """Loads the image at the given location into a flat numpy array. Returns the image as a numpy array x and the
-    target label as y. The target label is obtained by checking the weather observation from the same hour to
-    determine the label """
+    """Loads the image at the given location into a flat numpy array."""
 
     x = imread(folder + "/" + filename)
     x = x.flatten()
 
-    r = re.compile("RVAS_(\w{3,4})_\w+_(\d{8})_(\d{4})Z")
-    m = r.match(filename)
-    station = m.group(1)
-    date = m.group(2)
-    time = m.group(3)
-
-    # change obstime to top of the hour
-    if not time.endswith("00"):
-        time = time[:2] + "00"
-
-    # todo should we skip night time pics? how to determine sunset/sunrise
-
-    return x, station, date + time
+    return x
 
 
 def generate_labels_from_observations(image_dir, dataset, core_url="http://dw-dev.cmc.ec.gc.ca:8180"):
     """Generate the classification target labels by using the information in the weather observation found at the given
     core for the given images. Saves the label into a csv file of format <station>,<YYYYMMDDHHmm>,<label>"""
     files = os.listdir(image_dir)
-    r = re.compile("RVAS_(\w{3,4})_\w+_(\d{8})_(\d{4})Z")
+    r = re.compile("RVAS_(\w+)_\w+_(\d{8})_(\d{4})Z")
 
     Y = []
     for filename in files:
